@@ -33,19 +33,23 @@ typedef struct {
     unsigned char *rawImageData = [bitmapImageRep bitmapData];
     vector<vector<rgba>> pixels(height, vector<rgba>(width));
     
-    for (long y = 0; y < height; y++) {
-        for (long x = 0; x < width; x++) {
-            long pixelIndex = y * width + x;
-            pixels[y][x].r = rawImageData[pixelIndex * 4];
-            pixels[y][x].g = rawImageData[pixelIndex * 4 + 1];
-            pixels[y][x].b = rawImageData[pixelIndex  * 4 + 2];
-            pixels[y][x].a = rawImageData[pixelIndex * 4 + 3];
-            
+    for (long y = 0; y < height; ++y) {
+        for (long x = 0; x < width; ++x) {
+            long pixelIndex = (y * width + x) * 4;
+            pixels[y][x].r = rawImageData[pixelIndex];
+            pixels[y][x].g = rawImageData[pixelIndex + 1];
+            pixels[y][x].b = rawImageData[pixelIndex + 2];
+        }
+    }
+    
+    for (long y = 0; y < height; ++y) {
+        for (long x = 0; x < width; ++x) {
+            long pixelIndex = (y * width + x) * 4;
             int sumRed = 0, sumGreen = 0, sumBlue = 0;
             int count = 0;
             
-            for (long i = -radius; i <= radius; i++) {
-                for (long j = -radius; j <=radius; j++) {
+            for (long i = -radius; i <= radius; ++i) {
+                for (long j = -radius; j <=radius; ++j) {
                     long pixelX = x + j;
                     long pixelY = y + i;
                     
@@ -63,10 +67,9 @@ typedef struct {
             avgPixel.g = roundf(sumGreen / count);
             avgPixel.b = roundf(sumBlue / count);
             
-            rawImageData[pixelIndex *  4] = avgPixel.r;
-            rawImageData[pixelIndex *  4 +  1] = avgPixel.g;
-            rawImageData[pixelIndex *  4 +  2] = avgPixel.b;
-            rawImageData[pixelIndex * 4 + 3] = pixels[y][x].a;
+            rawImageData[pixelIndex] = avgPixel.r;
+            rawImageData[pixelIndex +  1] = avgPixel.g;
+            rawImageData[pixelIndex +  2] = avgPixel.b;
         }
     }
     
