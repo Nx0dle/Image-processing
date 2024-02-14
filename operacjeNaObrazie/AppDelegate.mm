@@ -11,9 +11,6 @@
 #include <cstring>
 using namespace std;
 
-#define RGBA(i) (i).r, (i).g, (i).b, (i).a
-#define GRGBA(i) (i).r, (i).g, (i).b, (i).a
-
 @interface AppDelegate ()
 
 @property (strong) IBOutlet NSWindow *window;
@@ -36,13 +33,69 @@ typedef struct rgba {
     return [[NSBitmapImageRep alloc] initWithData:[image TIFFRepresentation]];
 }
 
+- (NSImage *) renderImage:(NSImage *)image {
+    NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:image];
+    NSImage *colorImage = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
+    [colorImage addRepresentation:bitmapImageRep];
+    
+    return colorImage;
+}
+
+- (NSImage *) imageToGrayScale:(NSImage *)image {
+    NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:image];
+    unsigned char *rawImageData = [bitmapImageRep bitmapData];
+
+    NSInteger allPixelCount = bitmapImageRep.pixelsHigh * bitmapImageRep.pixelsWide;
+    for (NSInteger i = 0; i < allPixelCount; ++i) {
+
+        NSInteger pixelIndex = i * 4;
+        
+        uint8_t red = rawImageData[pixelIndex];
+        uint8_t green = rawImageData[pixelIndex + 1];
+        uint8_t blue = rawImageData[pixelIndex + 2];
+        
+        uint8_t grayValue = (red * 0.3 + green * 0.59 + blue * 0.11);
+        
+        rawImageData[pixelIndex] = grayValue;
+        rawImageData[pixelIndex + 1] = grayValue;
+        rawImageData[pixelIndex + 2] = grayValue;
+    }
+
+    NSImage *grayScaleImage = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
+    [grayScaleImage addRepresentation:bitmapImageRep];
+    
+    return grayScaleImage;
+}
+
+- (NSImage *) imageToNegative:(NSImage *)image {
+    const uint8_t MAXRGBA = 255;
+    
+    NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:image];
+    unsigned char *rawImageData = [bitmapImageRep bitmapData];
+
+    NSInteger allPixelCount = bitmapImageRep.pixelsHigh * bitmapImageRep.pixelsWide;
+    for (NSInteger i = 0; i < allPixelCount; ++i) {
+
+        NSInteger pixelIndex = i * 4;
+        
+        rawImageData[pixelIndex] = MAXRGBA - rawImageData[pixelIndex];
+        rawImageData[pixelIndex + 1] = MAXRGBA - rawImageData[pixelIndex + 1];
+        rawImageData[pixelIndex + 2] = MAXRGBA - rawImageData[pixelIndex + 2];
+    }
+
+    NSImage *negativeImage = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
+    [negativeImage addRepresentation:bitmapImageRep];
+    
+    return negativeImage;
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     @autoreleasepool {
         NSString *filePath = @"/Users/motionvfx/Documents/testImg.jpeg";
         
         imageView = [[NSImageView alloc] initWithFrame:[self.window.contentView bounds]];
         [imageView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-        test2 = [self loadImageFromFilePath:filePath];
+        inputImage = [self loadImageFromFilePath:filePath];
     }
 }
 
@@ -56,54 +109,33 @@ typedef struct rgba {
     return YES;
 }
 
--(IBAction) displayImg:(id)sender {
+- (IBAction) buttonAction:(id)sender {
+    NSString *buttonTitle = [sender title];
+    NSImage *outputImage;
+    
     CFAbsoluteTime startTime = CFAbsoluteTimeGetCurrent();
     
-    NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:test2];
-    NSImage *colorImage = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
-    [colorImage addRepresentation:bitmapImageRep];
-    
-    CFAbsoluteTime endTime = CFAbsoluteTimeGetCurrent();
-    CFTimeInterval elapsedTime = endTime - startTime;
-    
-    [imageView setImage:test2];
-    [[self.window contentView] addSubview:imageView];
-    NSLog(@"Time for color: %.5f seconds", elapsedTime);
-}
-
--(IBAction) grayScaleCalc:(id)sender {
-    CFAbsoluteTime startTime = CFAbsoluteTimeGetCurrent();
-    
-    NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:test2];
-    
-    unsigned char *rawImageData = [bitmapImageRep bitmapData];
-
-    NSInteger allPixelCount = bitmapImageRep.pixelsHigh * bitmapImageRep.pixelsWide;
-
-    for (NSInteger i =  0; i < allPixelCount; ++i) {
-
-        NSInteger pixelIndex = i *  4;
-        
-        uint8_t red = rawImageData[pixelIndex];
-        uint8_t green = rawImageData[pixelIndex +  1];
-        uint8_t blue = rawImageData[pixelIndex +  2];
-        
-        uint8_t grayValue = (red *  0.3 + green *  0.59 + blue *  0.11);
-        
-        rawImageData[pixelIndex] = grayValue;
-        rawImageData[pixelIndex +  1] = grayValue;
-        rawImageData[pixelIndex +  2] = grayValue;
-        
+    if ([buttonTitle  isEqual:@"Color"]) {
+        outputImage = [self renderImage:inputImage];
     }
-
-    NSImage *grayscaleImage = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
-    [grayscaleImage addRepresentation:bitmapImageRep];
+    else if ([buttonTitle isEqual:@"Negative"]) {
+        outputImage = [self imageToNegative:inputImage];
+    }
+    
+    else if ([buttonTitle isEqual:@"Gray scale"]) {
+        outputImage = [self imageToGrayScale:inputImage];
+    }
+    
+    else {
+        NSLog(@"Invalid action");
+    }
     
     CFAbsoluteTime endTime = CFAbsoluteTimeGetCurrent();
     CFTimeInterval elapsedTime = endTime - startTime;
     
-    [imageView setImage:grayscaleImage];
+    [imageView setImage:outputImage];
     [[self.window contentView] addSubview:imageView];
-    NSLog(@"Time for gray scale: %.5f seconds", elapsedTime);
+    NSLog(@"Time for negative: %.5f seconds", elapsedTime);
 }
+    
 @end

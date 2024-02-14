@@ -10,8 +10,11 @@
 @interface AppDelegate : NSObject <NSApplicationDelegate> {
     IBOutlet NSImageView *imageView;
     IBOutlet NSImageView *modImageView;
-    NSImage *test2;
+    NSImage *inputImage;
 }
+
+- (NSImage *) imageToGrayScale:(NSImage *)image;
+- (NSImage *) imageToNegative:(NSImage *)image;
 
 @end
 

@@ -695,26 +695,37 @@
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" id="POj-XU-qqE"/>
                     </imageView>
-                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ETf-jf-MwM">
-                        <rect key="frame" x="375" y="423" width="288" height="32"/>
+                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="AX3-Ct-LLa">
+                        <rect key="frame" x="503" y="423" width="160" height="32"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <buttonCell key="cell" type="push" title="Kolor" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="nby-8c-Qjx">
+                        <buttonCell key="cell" type="push" title="Gray scale" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="nb0-In-qFq">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
                         <connections>
-                            <action selector="displayImg:" target="Voe-Tx-rLC" id="UUJ-Hr-YBO"/>
+                            <action selector="buttonAction:" target="Voe-Tx-rLC" id="gTv-rx-Ahp"/>
                         </connections>
                     </button>
-                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="AX3-Ct-LLa">
-                        <rect key="frame" x="13" y="423" width="288" height="32"/>
+                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fsM-Ym-MyT">
+                        <rect key="frame" x="258" y="423" width="160" height="32"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <buttonCell key="cell" type="push" title="Skala szarości" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="nb0-In-qFq">
+                        <buttonCell key="cell" type="push" title="Negative" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="hkG-Vz-QRG">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
                         <connections>
-                            <action selector="grayScaleCalc:" target="Voe-Tx-rLC" id="JA3-ul-Qya"/>
+                            <action selector="buttonAction:" target="Voe-Tx-rLC" id="bKk-I8-ZBa"/>
+                        </connections>
+                    </button>
+                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ETf-jf-MwM">
+                        <rect key="frame" x="13" y="423" width="160" height="32"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <buttonCell key="cell" type="push" title="Color" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="nby-8c-Qjx">
+                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system"/>
+                        </buttonCell>
+                        <connections>
+                            <action selector="buttonAction:" target="Voe-Tx-rLC" id="AJ8-6v-7cc"/>
                         </connections>
                     </button>
                 </subviews>
