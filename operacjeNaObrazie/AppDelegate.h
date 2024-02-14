@@ -9,7 +9,8 @@
 
 @interface AppDelegate : NSObject <NSApplicationDelegate> {
     IBOutlet NSImageView *imageView;
-    IBOutlet NSTextField *textField;
+    IBOutlet NSImageView *modImageView;
+    NSImage *test2;
 }
 
 @end

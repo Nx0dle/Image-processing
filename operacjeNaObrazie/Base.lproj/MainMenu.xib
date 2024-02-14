@@ -691,20 +691,31 @@
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="AFX-As-tZC" customClass="myView">
-                        <rect key="frame" x="0.0" y="0.0" width="671" height="420"/>
+                        <rect key="frame" x="0.0" y="0.0" width="671" height="410"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" id="POj-XU-qqE"/>
                     </imageView>
                     <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ETf-jf-MwM">
-                        <rect key="frame" x="13" y="423" width="75" height="32"/>
+                        <rect key="frame" x="375" y="423" width="288" height="32"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <buttonCell key="cell" type="push" title="Button" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="nby-8c-Qjx">
+                        <buttonCell key="cell" type="push" title="Kolor" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="nby-8c-Qjx">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
-                            <connections>
-                                <action selector="button:" target="Voe-Tx-rLC" id="BvE-nZ-C4V"/>
-                            </connections>
                         </buttonCell>
+                        <connections>
+                            <action selector="displayImg:" target="Voe-Tx-rLC" id="UUJ-Hr-YBO"/>
+                        </connections>
+                    </button>
+                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="AX3-Ct-LLa">
+                        <rect key="frame" x="13" y="423" width="288" height="32"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <buttonCell key="cell" type="push" title="Skala szarości" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="nb0-In-qFq">
+                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system"/>
+                        </buttonCell>
+                        <connections>
+                            <action selector="grayScaleCalc:" target="Voe-Tx-rLC" id="JA3-ul-Qya"/>
+                        </connections>
                     </button>
                 </subviews>
             </view>
