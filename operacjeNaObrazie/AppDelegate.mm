@@ -143,9 +143,8 @@ typedef struct {
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     @autoreleasepool {
-        NSString *filePath = @"/Users/motionvfx/Documents/testImg.tiff";
-        
-        imageView = [[NSImageView alloc] initWithFrame:[self.window.contentView bounds]];
+        NSString *filePath = @"/Users/motionvfx/Documents/imgVertical.jpeg";
+    
         [imageView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
         inputImage = [self loadImageFromFilePath:filePath];
         [[self.window contentView] addSubview:imageView];
