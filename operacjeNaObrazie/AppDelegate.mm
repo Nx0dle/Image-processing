@@ -9,6 +9,7 @@
 #include <vector>
 #include <cstdint>
 #include <cstring>
+#include <cmath>
 using namespace std;
 
 #define RGBA(i) (i).r, (i).g, (i).b, (i).a
@@ -41,7 +42,7 @@ using namespace std;
     return exp(-pow(x,  2));
 }
 
-- (rgba) samplePixels:(NSImage *)image withPixel:(long)pickedPixel withPartX:(short)part withOffset:(short)offset {
+- (rgba) samplePixels:(NSImage *)image withPixel:(long)pickedPixel withPartX:(short)part withOffsetX:(short)offsetX withOffsetY:(short)offsetY {
     NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:image];
     const NSInteger width = bitmapImageRep.pixelsWide;
     const NSInteger height = bitmapImageRep.pixelsHigh;
@@ -66,18 +67,48 @@ using namespace std;
         }
     }
     
-    samplePixel = pixels[y + offset][x];
-    if (y == height && x == width) {
-        samplePixel2 = pixels[0][0];
+    samplePixel = pixels[y + offsetY][x];
+    if (offsetX >= 0) {
+        if (y == height && x == width) {
+            samplePixel2 = pixels[0][0];
+        }
+        if (x == width) {
+            samplePixel2 = pixels[y + offsetY][0];
+        }
+        if (y == height) {
+            samplePixel2 = pixels[0 + offsetY][x + offsetX];
+        }
+        if (x != width && y != height) {
+            samplePixel2 = pixels[y + offsetY][x + offsetX];
+        }
     }
-    if (x == width) {
-        samplePixel2 = pixels[y + offset][0];
+    if (offsetX < 0) {
+        if (y == 0 && x == 0) {
+            samplePixel2 = pixels[height + offsetY][width];
+        }
+        if (x == 0) {
+            samplePixel2 = pixels[y + offsetY][width];
+        }
+        if (y == 0) {
+            samplePixel2 = pixels[0 + offsetY][x + offsetX];
+        }
+        if (x != 0 && y != 0) {
+            samplePixel2 = pixels[y + offsetY][x + offsetX];
+        }
     }
-    if (y == height) {
-        samplePixel2 = pixels[0 + offset][x + 1];
-    }
-    if (x != width && y != height) {
-        samplePixel2 = pixels[y + offset][x + 1];
+    if (offsetY < 0) {
+        if (y == 0 && x == 0) {
+            samplePixel2 = pixels[height][width];
+        }
+        if (x == width) {
+            samplePixel2 = pixels[y + offsetY][0 + offsetX];
+        }
+        if (y == 0) {
+            samplePixel2 = pixels[0 + offsetY][x + offsetX];
+        }
+        if (x != 0 && y != 0) {
+            samplePixel2 = pixels[y + offsetY][x + offsetX];
+        }
     }
     
     double samplePixelPart = samplePixel.r * part / 10;
@@ -234,38 +265,36 @@ using namespace std;
     int sumRed = 0, sumGreen = 0, sumBlue = 0;
     int count = 0;
     
-    for (int i = 0; i < 2; i++) {
-        for (long y = 0; y < height; ++y) {
-            for (long x = 0; x < width; ++x) {
-                long pixelIndex = (y * width + x) * 4;
-                sumRed = 0;
-                sumGreen = 0;
-                sumBlue = 0;
-                count = 0;
-                
-                for (long i = -radius; i <= radius; ++i) {
-                    for (long j = -radius; j <=radius; ++j) {
-                        long pixelX = x + j;
-                        long pixelY = y + i;
-                        
-                        if (pixelX >=  0 && pixelX < width && pixelY >=  0 && pixelY < height) {
-                            rgba pixel = pixels[pixelY][pixelX];
-                            sumRed += pixel.r;
-                            sumGreen += pixel.g;
-                            sumBlue += pixel.b;
-                            count++;
-                        }
+    for (long y = 0; y < height; ++y) {
+        for (long x = 0; x < width; ++x) {
+            long pixelIndex = (y * width + x) * 4;
+            sumRed = 0;
+            sumGreen = 0;
+            sumBlue = 0;
+            count = 0;
+            
+            for (long yr = -radius; yr <= radius; ++yr) {
+                for (long xr = -radius; xr <=radius; ++xr) {
+                    long pixelX = x + xr;
+                    long pixelY = y + yr;
+                    
+                    if (pixelX >=  0 && pixelX < width && pixelY >=  0 && pixelY < height) {
+                        rgba pixel = pixels[pixelY][pixelX];
+                        sumRed += pixel.r;
+                        sumGreen += pixel.g;
+                        sumBlue += pixel.b;
+                        count++;
                     }
                 }
-                rgba avgPixel;
-                avgPixel.r = roundf(sumRed / count);
-                avgPixel.g = roundf(sumGreen / count);
-                avgPixel.b = roundf(sumBlue / count);
-                
-                rawImageData[pixelIndex] = avgPixel.r;
-                rawImageData[pixelIndex +  1] = avgPixel.g;
-                rawImageData[pixelIndex +  2] = avgPixel.b;
             }
+            rgba avgPixel;
+            avgPixel.r = roundf(sumRed / count);
+            avgPixel.g = roundf(sumGreen / count);
+            avgPixel.b = roundf(sumBlue / count);
+            
+            rawImageData[pixelIndex] = avgPixel.r;
+            rawImageData[pixelIndex +  1] = avgPixel.g;
+            rawImageData[pixelIndex +  2] = avgPixel.b;
         }
     }
     
@@ -277,7 +306,7 @@ using namespace std;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     @autoreleasepool {
-        NSString *filePath = @"/Users/motionvfx/Documents/twoColor.avif";
+        NSString *filePath = @"/Users/motionvfx/Documents/imgVertical.jpeg";
     
         [imageView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
         inputImage = [self loadImageFromFilePath:filePath];
@@ -289,7 +318,7 @@ using namespace std;
         int partX = 7;
         int partY = 4;
         
-        NSLog(@"Pixel sampled with next: %d %d %d %d", RGBA([self sampleSquarePixels:inputImage withSample:[self samplePixels:inputImage withPixel:genericPixel withPartX:partX withOffset:0] withSecondSample:[self samplePixels:inputImage withPixel:genericPixel withPartX:partX withOffset:1] withPartY:partY]));
+        NSLog(@"Pixel square sampled with next: %d %d %d %d", RGBA([self sampleSquarePixels:inputImage withSample:[self samplePixels:inputImage withPixel:genericPixel withPartX:partX withOffsetX:0 withOffsetY:0] withSecondSample:[self samplePixels:inputImage withPixel:genericPixel withPartX:partX withOffsetX:-1 withOffsetY:0] withPartY:partY]));
     }
 }
 
