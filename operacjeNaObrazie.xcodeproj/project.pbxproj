@@ -36,7 +36,7 @@
 
 /* Begin PBXFileReference section */
 		051479A02B7A11C3003954F1 /* operacjeNaObrazie.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = operacjeNaObrazie.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		051479A32B7A11C3003954F1 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		051479A32B7A11C3003954F1 /* AppDelegate.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		051479A42B7A11C3003954F1 /* AppDelegate.mm */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
 		051479A62B7A11C5003954F1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		051479A92B7A11C5003954F1 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
@@ -206,7 +206,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 0514799B2B7A11C3003954F1 /* Build configuration list for PBXProject "imageProcessing" */;
+			buildConfigurationList = 0514799B2B7A11C3003954F1 /* Build configuration list for PBXProject "operacjeNaObrazie" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -533,7 +533,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		0514799B2B7A11C3003954F1 /* Build configuration list for PBXProject "imageProcessing" */ = {
+		0514799B2B7A11C3003954F1 /* Build configuration list for PBXProject "operacjeNaObrazie" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				051479C42B7A11C5003954F1 /* Debug */,

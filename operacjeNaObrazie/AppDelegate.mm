@@ -19,14 +19,7 @@ using namespace std;
 
 @implementation AppDelegate
 
-typedef struct {
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
-    uint8_t a;
-} rgba;
-
--(NSImage *) boxBlurToImage:(NSImage *)image withRadius:(int)radius {
+- (vector<vector<rgba>>) imageStruct:(NSImage *)image {
     NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:image];
     const NSInteger width = bitmapImageRep.pixelsWide;
     const NSInteger height = bitmapImageRep.pixelsHigh;
@@ -41,42 +34,128 @@ typedef struct {
             pixels[y][x].b = rawImageData[pixelIndex + 2];
         }
     }
+    return pixels;
+}
+
+- (double)gaussianWithX:(double)x {
+    return exp(-pow(x,  2));
+}
+
+- (rgba) samplePixels:(NSImage *)image withPixel:(long)pickedPixel withPartX:(short)part withOffset:(short)offset {
+    NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:image];
+    const NSInteger width = bitmapImageRep.pixelsWide;
+    const NSInteger height = bitmapImageRep.pixelsHigh;
+    rgba samplePixel;
+    rgba samplePixel2;
+    vector<vector<rgba>>pixels = [self imageStruct:image];
+    long pixelCount = 0;
+    int x = 0;
+    int y = 0;
     
-    for (long y = 0; y < height; ++y) {
-        for (long x = 0; x < width; ++x) {
-            long pixelIndex = (y * width + x) * 4;
-            int sumRed = 0, sumGreen = 0, sumBlue = 0;
-            int count = 0;
-            
-            for (long i = -radius; i <= radius; ++i) {
-                for (long j = -radius; j <=radius; ++j) {
-                    long pixelX = x + j;
-                    long pixelY = y + i;
-                    
-                    if (pixelX >=  0 && pixelX < width && pixelY >=  0 && pixelY < height) {
-                        rgba pixel = pixels[pixelY][pixelX];
-                        sumRed += pixel.r;
-                        sumGreen += pixel.g;
-                        sumBlue += pixel.b;
-                        count++;
-                    }
-                }
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            if (pixelCount != pickedPixel) {
+                pixelCount++;
             }
-            rgba avgPixel;
-            avgPixel.r = roundf(sumRed / count);
-            avgPixel.g = roundf(sumGreen / count);
-            avgPixel.b = roundf(sumBlue / count);
-            
-            rawImageData[pixelIndex] = avgPixel.r;
-            rawImageData[pixelIndex +  1] = avgPixel.g;
-            rawImageData[pixelIndex +  2] = avgPixel.b;
+            else {
+                break;
+            }
+        }
+        if (pixelCount == pickedPixel) {
+            break;
         }
     }
     
-    NSImage *bluredImage = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
-    [bluredImage addRepresentation:bitmapImageRep];
+    samplePixel = pixels[y + offset][x];
+    if (y == height && x == width) {
+        samplePixel2 = pixels[0][0];
+    }
+    if (x == width) {
+        samplePixel2 = pixels[y + offset][0];
+    }
+    if (y == height) {
+        samplePixel2 = pixels[0 + offset][x + 1];
+    }
+    if (x != width && y != height) {
+        samplePixel2 = pixels[y + offset][x + 1];
+    }
     
-    return bluredImage;
+    double samplePixelPart = samplePixel.r * part / 10;
+    double samplePixel2Part = samplePixel2.r * (10 - part) / 10;
+    double outputRed = samplePixelPart + samplePixel2Part;
+    
+    samplePixelPart = samplePixel.g * part / 10;
+    samplePixel2Part = samplePixel2.g * (10 - part) / 10;
+    double outputGreen = samplePixelPart + samplePixel2Part;
+    
+    samplePixelPart = samplePixel.b * part / 10;
+    samplePixel2Part = samplePixel2.b * (10 - part) / 10;
+    double outputBlue = samplePixelPart + samplePixel2Part;
+    
+    samplePixelPart = samplePixel.a * part / 10;
+    samplePixel2Part = samplePixel2.a * (10 - part) / 10;
+    double outputAlpha = samplePixelPart + samplePixel2Part;
+    
+    rgba outputSample;
+    outputSample.r = outputRed;
+    outputSample.g = outputGreen;
+    outputSample.b = outputBlue;
+    outputSample.a = outputAlpha;
+    
+    return outputSample;
+}
+
+-(rgba) sampleSquarePixels:(NSImage *)image withSample:(rgba)firstSampleX withSecondSample:(rgba)secondSampleX withPartY:(short)partY {
+    
+    double sampleY = firstSampleX.r * partY / 10;
+    double secondSampleY = secondSampleX.r * (10 - partY) / 10;
+    double outputRed = sampleY + secondSampleY;
+    
+    sampleY = firstSampleX.g * partY / 10;
+    secondSampleY = secondSampleX.g * (10 - partY) / 10;
+    double outputGreen = sampleY + secondSampleY;
+    
+    sampleY = firstSampleX.b * partY / 10;
+    secondSampleY = secondSampleX.b * (10 - partY) / 10;
+    double outputBlue = sampleY + secondSampleY;
+    
+    sampleY = firstSampleX.a * partY / 10;
+    secondSampleY = secondSampleX.a * (10 - partY) / 10;
+    double outputAlpha = sampleY + secondSampleY;
+    
+    rgba squareSample;
+    squareSample.r = outputRed;
+    squareSample.g = outputGreen;
+    squareSample.b = outputBlue;
+    squareSample.a = outputAlpha;
+    
+    return squareSample;
+}
+
+-(rgba) pickPixelFromImage:(NSImage *)image withPixel:(long)pixelNumer withOffset:(int)offset{
+    NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:image];
+    const NSInteger width = bitmapImageRep.pixelsWide;
+    const NSInteger height = bitmapImageRep.pixelsHigh;
+    vector<vector<rgba>>pixels = [self imageStruct:image];
+    long pixelCount = 0;
+    int x = 0;
+    int y = 0;
+    
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            if (pixelCount != pixelNumer) {
+                pixelCount++;
+            }
+            else {
+                break;
+            }
+        }
+        if (pixelCount == pixelNumer) {
+            break;
+        }
+    }
+    rgba pixel = pixels[y][x + offset];
+    return pixel;
 }
 
 - (NSImage *) loadImageFromFilePath:(NSString *)filePath {
@@ -144,13 +223,73 @@ typedef struct {
     return negativeImage;
 }
 
+-(NSImage *) boxBlurToImage:(NSImage *)image withRadius:(int)radius {
+    NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:image];
+    const NSInteger width = bitmapImageRep.pixelsWide;
+    const NSInteger height = bitmapImageRep.pixelsHigh;
+    unsigned char *rawImageData = [bitmapImageRep bitmapData];
+    
+    vector<vector<rgba>>pixels = [self imageStruct:image];
+    
+    int sumRed = 0, sumGreen = 0, sumBlue = 0;
+    int count = 0;
+    
+    for (int i = 0; i < 2; i++) {
+        for (long y = 0; y < height; ++y) {
+            for (long x = 0; x < width; ++x) {
+                long pixelIndex = (y * width + x) * 4;
+                sumRed = 0;
+                sumGreen = 0;
+                sumBlue = 0;
+                count = 0;
+                
+                for (long i = -radius; i <= radius; ++i) {
+                    for (long j = -radius; j <=radius; ++j) {
+                        long pixelX = x + j;
+                        long pixelY = y + i;
+                        
+                        if (pixelX >=  0 && pixelX < width && pixelY >=  0 && pixelY < height) {
+                            rgba pixel = pixels[pixelY][pixelX];
+                            sumRed += pixel.r;
+                            sumGreen += pixel.g;
+                            sumBlue += pixel.b;
+                            count++;
+                        }
+                    }
+                }
+                rgba avgPixel;
+                avgPixel.r = roundf(sumRed / count);
+                avgPixel.g = roundf(sumGreen / count);
+                avgPixel.b = roundf(sumBlue / count);
+                
+                rawImageData[pixelIndex] = avgPixel.r;
+                rawImageData[pixelIndex +  1] = avgPixel.g;
+                rawImageData[pixelIndex +  2] = avgPixel.b;
+            }
+        }
+    }
+    
+    NSImage *bluredImage = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
+    [bluredImage addRepresentation:bitmapImageRep];
+    
+    return bluredImage;
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     @autoreleasepool {
-        NSString *filePath = @"/Users/motionvfx/Documents/imgVertical.jpeg";
+        NSString *filePath = @"/Users/motionvfx/Documents/twoColor.avif";
     
         [imageView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
         inputImage = [self loadImageFromFilePath:filePath];
         [[self.window contentView] addSubview:imageView];
+        
+        NSLog(@"Generic pixel: %d %d %d %d", RGBA([self pickPixelFromImage:inputImage withPixel:100 withOffset:0]));
+        
+        int genericPixel = 331;
+        int partX = 7;
+        int partY = 4;
+        
+        NSLog(@"Pixel sampled with next: %d %d %d %d", RGBA([self sampleSquarePixels:inputImage withSample:[self samplePixels:inputImage withPixel:genericPixel withPartX:partX withOffset:0] withSecondSample:[self samplePixels:inputImage withPixel:genericPixel withPartX:partX withOffset:1] withPartY:partY]));
     }
 }
 
@@ -193,7 +332,7 @@ typedef struct {
     CFTimeInterval elapsedTime = endTime - startTime;
     
     [imageView setImage:outputImage];
-    NSLog(@"Time for negative: %.5f seconds", elapsedTime);
+    NSLog(@"Time for %@: %.5f seconds", buttonTitle, elapsedTime);
 }
     
 @end
