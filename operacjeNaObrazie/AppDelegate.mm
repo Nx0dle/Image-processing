@@ -68,7 +68,7 @@ using namespace std;
     }
     
     samplePixel = pixels[y + offsetY][x];
-    if (offsetX >= 0) {
+    if (offsetX >= 0 || offsetY >= 0) {
         if (y == height && x == width) {
             samplePixel2 = pixels[0][0];
         }
@@ -304,9 +304,90 @@ using namespace std;
     return bluredImage;
 }
 
+- (vector<vector<double>>) generateGaussianKernel:(int)radius {
+    int size = radius * 2 + 1;
+    double x = 0.0, y = 0.0, r = 0.0, weightSum = 0.0, kernelSum = 0.0;
+    double output;
+    vector<vector<double>> kernel(size, vector<double>(size));
+    
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            y = abs(i - radius);
+            x = abs(j - radius);
+            r = (sqrt((x * x) + (y * y)) * 2 / radius);
+            output = pow(M_E, -(pow(r, 2)));
+            kernel[i][j] = output;
+            weightSum += output;
+        }
+    }
+    
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            kernel[i][j] /= weightSum;
+            kernelSum += kernel[i][j];
+        }
+    }
+    
+    return kernel;
+}
+
+-(NSImage *) gaussBlurToImage:(NSImage *)image withRadius:(int)radius {
+    NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:image];
+    const NSInteger width = bitmapImageRep.pixelsWide;
+    const NSInteger height = bitmapImageRep.pixelsHigh;
+    unsigned char *rawImageData = [bitmapImageRep bitmapData];
+    
+    vector<vector<double>>kernel = [self generateGaussianKernel:radius];
+    vector<vector<rgba>>pixels = [self imageStruct:image];
+    
+    int sumRed = 0, sumGreen = 0, sumBlue = 0, sumAlpha = 0;
+    int count = 0;
+    double kernelSum2 = 0.0, weight = 0.0;
+    
+    for (long y = 0; y < height; ++y) {
+        for (long x = 0; x < width; ++x) {
+            long pixelIndex = (y * width + x) * 4;
+            sumRed = 0;
+            sumGreen = 0;
+            sumBlue = 0;
+            sumAlpha = 0;
+            count = 0;
+            
+            for (int yr = -radius; yr <= radius; ++yr) {
+                for (int xr = -radius; xr <=radius; ++xr) {
+                    long pixelX = x + xr;
+                    long pixelY = y + yr;
+                    
+                    if (pixelX >=  0 && pixelX < width && pixelY >=  0 && pixelY < height) {
+                        rgba pixel = pixels[pixelY][pixelX];
+                        weight = kernel[yr + radius][xr + radius];
+                        sumRed += roundf(pixel.r * weight);
+                        sumGreen += roundf(pixel.g * weight);
+                        sumBlue += roundf(pixel.b * weight);
+                        kernelSum2 += weight;
+                    }
+                }
+            }
+            rgba avgPixel;
+            avgPixel.r = roundf(sumRed);
+            avgPixel.g = roundf(sumGreen);
+            avgPixel.b = roundf(sumBlue);
+            
+            rawImageData[pixelIndex] = avgPixel.r;
+            rawImageData[pixelIndex +  1] = avgPixel.g;
+            rawImageData[pixelIndex +  2] = avgPixel.b;
+        }
+    }
+    
+    NSImage *bluredImage = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
+    [bluredImage addRepresentation:bitmapImageRep];
+    
+    return bluredImage;
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     @autoreleasepool {
-        NSString *filePath = @"/Users/motionvfx/Documents/imgVertical.jpeg";
+        NSString *filePath = @"/Users/motionvfx/Documents/twoColor.avif";
     
         [imageView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
         inputImage = [self loadImageFromFilePath:filePath];
@@ -350,7 +431,7 @@ using namespace std;
     }
     
     else if ([buttonTitle isEqual:@"Blur"]) {
-        outputImage = [self boxBlurToImage:inputImage withRadius:10];
+        outputImage = [self gaussBlurToImage:inputImage withRadius:15];
     }
     
     else {
