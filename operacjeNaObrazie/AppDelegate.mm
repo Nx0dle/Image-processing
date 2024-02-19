@@ -22,7 +22,7 @@ using namespace std;
 
 @implementation AppDelegate
 
-bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch = 0, gaussOptimizedSwitch = 0;
+bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch = 0, gaussOptimizedSwitch = 0, gaussianWThreads = 0;
 
 - (IBAction) grayScaleSwitch:(id)sender {
     grayScaleSwitch = !grayScaleSwitch;
@@ -42,6 +42,10 @@ bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch
 
 - (IBAction) gaussOptimizedSwitch:(id)sender {
     gaussOptimizedSwitch = !gaussOptimizedSwitch;
+}
+
+- (IBAction) gaussianWThreads:(id)sender {
+    gaussianWThreads = !gaussianWThreads;
 }
 
 - (vector<vector<rgba>>) imageStruct:(NSImage *)image {
