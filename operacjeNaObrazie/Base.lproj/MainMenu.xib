@@ -707,18 +707,6 @@
                                                 <action selector="grayScaleSwitch:" target="Voe-Tx-rLC" id="Zye-Lk-UYS"/>
                                             </connections>
                                         </switch>
-                                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="M2c-3V-dAX">
-                                            <rect key="frame" x="266" y="396" width="75" height="16"/>
-                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                            <textFieldCell key="cell" lineBreakMode="clipping" alignment="center" title="Gray scale" id="TLa-1y-2Ps">
-                                                <font key="font" usesAppearanceFont="YES"/>
-                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                            </textFieldCell>
-                                            <connections>
-                                                <accessibilityConnection property="title" destination="3qD-12-ACN" id="6rn-4n-eke"/>
-                                            </connections>
-                                        </textField>
                                         <switch horizontalHuggingPriority="750" verticalHuggingPriority="750" fixedFrame="YES" baseWritingDirection="leftToRight" alignment="left" translatesAutoresizingMaskIntoConstraints="NO" id="Tn1-48-3z0">
                                             <rect key="frame" x="344" y="361" width="42" height="25"/>
                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
@@ -803,7 +791,7 @@
                                             </connections>
                                         </switch>
                                         <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="bXn-Bl-3nY">
-                                            <rect key="frame" x="193" y="246" width="142" height="16"/>
+                                            <rect key="frame" x="198" y="246" width="142" height="16"/>
                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                             <textFieldCell key="cell" lineBreakMode="clipping" alignment="center" title="Gaussian with threads" id="UR7-dG-B2d">
                                                 <font key="font" usesAppearanceFont="YES"/>
@@ -814,6 +802,29 @@
                                                 <accessibilityConnection property="title" destination="GWe-An-BTW" id="4yz-Ag-jsv"/>
                                             </connections>
                                         </textField>
+                                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="M2c-3V-dAX">
+                                            <rect key="frame" x="265" y="396" width="75" height="16"/>
+                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" alignment="center" title="Gray scale" id="TLa-1y-2Ps">
+                                                <font key="font" usesAppearanceFont="YES"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                            <connections>
+                                                <accessibilityConnection property="title" destination="3qD-12-ACN" id="6rn-4n-eke"/>
+                                            </connections>
+                                        </textField>
+                                        <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="XuO-Qb-n3x">
+                                            <rect key="frame" x="269" y="203" width="135" height="32"/>
+                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                            <buttonCell key="cell" type="push" title="Effect difference" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="lvZ-dL-yfs">
+                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                            </buttonCell>
+                                            <connections>
+                                                <action selector="buttonAction:" target="Voe-Tx-rLC" id="pwV-rK-vSf"/>
+                                            </connections>
+                                        </button>
                                     </subviews>
                                 </view>
                             </tabViewItem>

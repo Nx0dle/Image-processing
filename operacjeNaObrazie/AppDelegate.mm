@@ -534,34 +534,33 @@ bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch
     return bluredImage;
 }
 
-- (NSImage *) gaussBlurToImageOptimizedWThreads:(NSImage *)image withRadius:(int)radius withThreads:(int)threadsNo {
-    NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:image];
-    
-    const NSInteger width = bitmapImageRep.pixelsWide;
-    const NSInteger height = bitmapImageRep.pixelsHigh;
-    NSInteger stripeHeight = height;
-    
-    if (threadsNo > 0) {
-        stripeHeight = height / threadsNo;
-    }
-    
-    unsigned char *rawImageData = [bitmapImageRep bitmapData];
-    
-    vector<double>kernel = [self generateGaussianKernel1D:radius];
-    vector<vector<rgba>>pixels = [self imageStruct:image];
-    
-    int sumRed = 0, sumGreen = 0, sumBlue = 0, sumAlpha = 0;
-    int count = 0;
-    double kernelSum2 = 0.0, weight = 0.0;
-    
-    NSImage *bluredImageVertical;
-    NSBitmapImageRep *bitmapImageRepVertical;
-    unsigned char *rawImageDataVertical;
-    NSImage *bluredImage;
-    
-    for (int s = 0; s < threadsNo; s++) {
-        long endY = stripeHeight * (s + 1);
-        long startY = s * stripeHeight;
+- (NSBitmapImageRep *) gaussBlurToImageOptimizedWThreads:(NSImage *)image withRadius:(int)radius withThreads:(int)threadsNo startY:(long)startY endY:(long)endY {
+    @autoreleasepool {
+        NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:image];
+        
+        const NSInteger width = bitmapImageRep.pixelsWide;
+        const NSInteger height = bitmapImageRep.pixelsHigh;
+        double stripeHeight = height;
+        
+        if (threadsNo > 0) {
+            stripeHeight = height / threadsNo;
+        }
+        
+        unsigned char *rawImageData = [bitmapImageRep bitmapData];
+        
+        vector<double>kernel = [self generateGaussianKernel1D:radius];
+        vector<vector<rgba>>pixels = [self imageStruct:image];
+        
+        int sumRed = 0, sumGreen = 0, sumBlue = 0, sumAlpha = 0;
+        int count = 0;
+        double kernelSum2 = 0.0, weight = 0.0;
+        
+        NSImage *bluredImageVertical;
+        NSBitmapImageRep *bitmapImageRepVertical;
+        unsigned char *rawImageDataVertical;
+        
+        
+        
         for (long y = startY; y < endY; y++) {
             for (long x = 0; x < width; ++x) {
                 long pixelIndex = (y * width + x) * 4;
@@ -594,17 +593,13 @@ bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch
                 rawImageData[pixelIndex +  2] = pixel.b;
             }
         }
-    }
-    
-    bluredImageVertical = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
-    [bluredImageVertical addRepresentation:bitmapImageRep];
-    pixels = [self imageStruct:bluredImageVertical];
-    bitmapImageRepVertical = [self createBitmapImageRepFromImage:bluredImageVertical];
-    rawImageDataVertical = [bitmapImageRepVertical bitmapData];
-    
-    for (int s = 0; s < threadsNo; s++) {
-        long startY = s * stripeHeight;
-        long endY = stripeHeight * (s + 1);
+        
+        bluredImageVertical = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
+        [bluredImageVertical addRepresentation:bitmapImageRep];
+        pixels = [self imageStruct:bluredImageVertical];
+        bitmapImageRepVertical = [self createBitmapImageRepFromImage:bluredImageVertical];
+        rawImageDataVertical = [bitmapImageRepVertical bitmapData];
+        
         for (long y = startY; y < endY; ++y) {
             for (long x = 0; x < width; ++x) {
                 long pixelIndex = (y * width + x) * 4;
@@ -638,17 +633,73 @@ bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch
                 rawImageDataVertical[pixelIndex +  2] = avgPixel.b;
             }
         }
+        
+        return bitmapImageRepVertical;
     }
+}
+
+- (NSImage *)gaussThreading:(NSImage *)image withRadius:(int)radius withThreads:(int)threadsNo {
+    NSInteger stripeHeight = image.size.height / threadsNo;
+    NSImage *copyImage = [image copy];
+    NSBitmapImageRep *copyBitmapImageRep = [self createBitmapImageRepFromImage:copyImage];
+    unsigned char *rawDataFromCopyImage = [copyBitmapImageRep bitmapData];
     
-    bluredImage = [[NSImage alloc] initWithSize:[bitmapImageRepVertical size]];
-    [bluredImage addRepresentation:bitmapImageRepVertical];
+    NSInteger height = image.size.height;
+    NSInteger width = image.size.width;
+    
+    dispatch_group_t group = dispatch_group_create();
+    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH,  0);
+    
+    for (int s = 0; s < threadsNo; s++) {
+            dispatch_group_async(group, queue, ^{
+                long endY = (s == threadsNo - 1) ? height : stripeHeight * (s + 1);
+                long startY = s * stripeHeight;
+                
+                NSBitmapImageRep *bitmapImageRep = [self gaussBlurToImageOptimizedWThreads:copyImage withRadius:radius withThreads:threadsNo startY:startY endY:endY];
+                
+                @autoreleasepool {
+                    dispatch_semaphore_t lock = dispatch_semaphore_create(1);
+                    dispatch_semaphore_wait(lock, DISPATCH_TIME_FOREVER);
+                    unsigned char *rawTMPDataFromImage = [bitmapImageRep bitmapData];
+                    
+                    for (long x = startY * width * 4; x < endY * width * 4; x++ ) {
+                        rawDataFromCopyImage[x] = rawTMPDataFromImage[x];
+                    }
+                    dispatch_semaphore_signal(lock);
+                }
+            });
+        }
+        
+    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+    
+    
+    NSImage *bluredImage = [[NSImage alloc] initWithSize:[copyBitmapImageRep size]];
+    [bluredImage addRepresentation:copyBitmapImageRep];
     
     return bluredImage;
 }
 
+- (vector<bool>) effectDifference:(NSImage *)image1 withImage2:(NSImage *)image2 {
+    NSBitmapImageRep *image1BitmapRep = [self createBitmapImageRepFromImage:image1];
+    unsigned char *rawImage1Data = [image1BitmapRep bitmapData];
+    
+    NSBitmapImageRep *image2BitmapRep = [self createBitmapImageRepFromImage:image2];
+    unsigned char *rawImage2Data = [image2BitmapRep bitmapData];
+    
+    long size = image1BitmapRep.size.width * image1BitmapRep.size.height * 4;
+    
+    vector<bool> resultCompare(size);
+    
+    for (long x = 0; x < size; x++) {
+        rawImage1Data[x] == rawImage2Data[x] ? resultCompare.push_back(true) : resultCompare.push_back(false);
+    }
+    
+    return resultCompare;
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     @autoreleasepool {
-        NSString *filePath = @"/Users/motionvfx/Documents/smallImage.avif";
+        NSString *filePath = @"/Users/motionvfx/Documents/chessboard.png";
     
         [imageView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
         inputImage = [self loadImageFromFilePath:filePath];
@@ -660,6 +711,7 @@ bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch
         int partY = 4;
         
         NSLog(@"Pixel square sampled with next: %d %d %d %d", RGBA([self sampleSquarePixels:inputImage withSample:[self samplePixels:inputImage withPixel:genericPixel withPartX:partX withOffsetX:0 withOffsetY:0] withSecondSample:[self samplePixels:inputImage withPixel:genericPixel withPartX:partX withOffsetX:-1 withOffsetY:0] withPartY:partY]));
+        
     }
 }
 
@@ -702,9 +754,12 @@ bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch
         }
         
         if (gaussianWThreads == 1) {
-            outputImage = [self gaussBlurToImageOptimizedWThreads:outputImage withRadius:10 withThreads:8];
+            outputImage = [self gaussThreading:outputImage withRadius:10 withThreads:8];
         }
         
+    }
+    else if ([senderTitle isEqual:@"Effect difference"]) {
+        [self effectDifference:[self renderImage:inputImage] withImage2:[self renderImage:inputImage]];
     }
     else {
         NSLog(@"invalid action");

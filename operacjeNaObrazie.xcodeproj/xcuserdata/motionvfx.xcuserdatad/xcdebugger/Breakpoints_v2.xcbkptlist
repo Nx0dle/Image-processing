@@ -23,17 +23,49 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "EF7F50D0-78A3-48C1-88EF-62C49CC1ABD3"
-            shouldBeEnabled = "No"
+            uuid = "C4CEA605-72C1-4829-AAE0-5BA2B70799A4"
+            shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "operacjeNaObrazie/AppDelegate.mm"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "654"
-            endingLineNumber = "654"
-            landmarkName = "-applicationDidFinishLaunching:"
+            startingLineNumber = "697"
+            endingLineNumber = "697"
+            landmarkName = "-effectDifference:withImage2:"
             landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "C4CEA605-72C1-4829-AAE0-5BA2B70799A4 - ff21ecb18e632a1a"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "-[AppDelegate effectDifference:withImage2:]"
+                  moduleName = "operacjeNaObrazie"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/motionvfx/Documents/Obraz/imageProcessing/operacjeNaObrazie/AppDelegate.mm"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "697"
+                  endingLineNumber = "697"
+                  offsetFromSymbolStart = "810">
+               </Location>
+               <Location
+                  uuid = "C4CEA605-72C1-4829-AAE0-5BA2B70799A4 - ff21ecb18e632a1a"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "-[AppDelegate effectDifference:withImage2:]"
+                  moduleName = "operacjeNaObrazie"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/motionvfx/Documents/Obraz/imageProcessing/operacjeNaObrazie/AppDelegate.mm"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "697"
+                  endingLineNumber = "697"
+                  offsetFromSymbolStart = "822">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>
