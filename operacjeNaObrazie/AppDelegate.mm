@@ -53,17 +53,41 @@ bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch
     const NSInteger width = bitmapImageRep.pixelsWide;
     const NSInteger height = bitmapImageRep.pixelsHigh;
     unsigned char *rawImageData = [bitmapImageRep bitmapData];
-    vector<vector<rgba>> pixels(height, vector<rgba>(width));
+    vector<vector<rgba>> imageStruct(height, vector<rgba>(width));
     
     for (long y = 0; y < height; ++y) {
         for (long x = 0; x < width; ++x) {
             long pixelIndex = (y * width + x) * 4;
-            pixels[y][x].r = rawImageData[pixelIndex];
-            pixels[y][x].g = rawImageData[pixelIndex + 1];
-            pixels[y][x].b = rawImageData[pixelIndex + 2];
+            imageStruct[y][x].r = rawImageData[pixelIndex];
+            imageStruct[y][x].g = rawImageData[pixelIndex + 1];
+            imageStruct[y][x].b = rawImageData[pixelIndex + 2];
         }
     }
-    return pixels;
+    return imageStruct;
+}
+
+- (NSImage *) structToImage:(vector<vector<rgba>>)imageStruct withTemplate:(NSImage *)templateImage {
+    @autoreleasepool {
+        unsigned long height = imageStruct.size();
+        unsigned long width = imageStruct[0].size();
+        NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:templateImage];
+        unsigned char *rawImageData = [bitmapImageRep bitmapData];
+        
+        for (long y = 0; y < height; ++y) {
+            for (long x = 0; x < width; ++x) {
+                long pixelIndex = (y * width + x) * 4;
+                
+                rawImageData[pixelIndex] = imageStruct[y][x].r;
+                rawImageData[pixelIndex + 1] = imageStruct[y][x].g;
+                rawImageData[pixelIndex + 2] = imageStruct[y][x].b;
+                rawImageData[pixelIndex + 3] = imageStruct[y][x].a;
+            }
+        }
+        NSImage *outputImage = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
+        [outputImage addRepresentation:bitmapImageRep];
+        
+        return outputImage;
+    }
 }
 
 - (rgba) samplePixels:(NSImage *)image withPixel:(long)pickedPixel withPartX:(short)part withOffsetX:(short)offsetX withOffsetY:(short)offsetY {
@@ -256,78 +280,6 @@ bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch
     return grayScaleImage;
 }
 
-- (NSImage *) imageToNegative:(NSImage *)image {
-    const uint8_t MAXRGBA = 255;
-    
-    NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:image];
-    unsigned char *rawImageData = [bitmapImageRep bitmapData];
-
-    NSInteger allPixelCount = bitmapImageRep.pixelsHigh * bitmapImageRep.pixelsWide;
-    for (NSInteger i = 0; i < allPixelCount; ++i) {
-
-        NSInteger pixelIndex = i * 4;
-        
-        rawImageData[pixelIndex] = MAXRGBA - rawImageData[pixelIndex];
-        rawImageData[pixelIndex + 1] = MAXRGBA - rawImageData[pixelIndex + 1];
-        rawImageData[pixelIndex + 2] = MAXRGBA - rawImageData[pixelIndex + 2];
-    }
-
-    NSImage *negativeImage = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
-    [negativeImage addRepresentation:bitmapImageRep];
-    
-    return negativeImage;
-}
-
--(NSImage *) boxBlurToImage:(NSImage *)image withRadius:(int)radius {
-    NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:image];
-    const NSInteger width = bitmapImageRep.pixelsWide;
-    const NSInteger height = bitmapImageRep.pixelsHigh;
-    unsigned char *rawImageData = [bitmapImageRep bitmapData];
-    
-    vector<vector<rgba>>pixels = [self imageStruct:image];
-    
-    int sumRed = 0, sumGreen = 0, sumBlue = 0;
-    int count = 0;
-    
-    for (long y = 0; y < height; ++y) {
-        for (long x = 0; x < width; ++x) {
-            long pixelIndex = (y * width + x) * 4;
-            sumRed = 0;
-            sumGreen = 0;
-            sumBlue = 0;
-            count = 0;
-            
-            for (long yr = -radius; yr <= radius; ++yr) {
-                for (long xr = -radius; xr <=radius; ++xr) {
-                    long pixelX = x + xr;
-                    long pixelY = y + yr;
-                    
-                    if (pixelX >=  0 && pixelX < width && pixelY >=  0 && pixelY < height) {
-                        rgba pixel = pixels[pixelY][pixelX];
-                        sumRed += pixel.r;
-                        sumGreen += pixel.g;
-                        sumBlue += pixel.b;
-                        count++;
-                    }
-                }
-            }
-            rgba avgPixel;
-            avgPixel.r = roundf(sumRed / count);
-            avgPixel.g = roundf(sumGreen / count);
-            avgPixel.b = roundf(sumBlue / count);
-            
-            rawImageData[pixelIndex] = avgPixel.r;
-            rawImageData[pixelIndex +  1] = avgPixel.g;
-            rawImageData[pixelIndex +  2] = avgPixel.b;
-        }
-    }
-    
-    NSImage *bluredImage = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
-    [bluredImage addRepresentation:bitmapImageRep];
-    
-    return bluredImage;
-}
-
 - (vector<vector<double>>) generateGaussianKernel2D:(int)radius {
     int size = radius * 2 + 1;
     double x = 0.0, y = 0.0, r = 0.0, weightSum = 0.0, kernelSum = 0.0;
@@ -382,161 +334,217 @@ bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch
     return kernel;
 }
 
--(NSImage *) gaussBlurToImage:(NSImage *)image withRadius:(int)radius {
+- (NSImage *) imageToNegative:(NSImage *)image {
+    const uint8_t MAXRGBA = 255;
+    
     NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:image];
-    const NSInteger width = bitmapImageRep.pixelsWide;
-    const NSInteger height = bitmapImageRep.pixelsHigh;
     unsigned char *rawImageData = [bitmapImageRep bitmapData];
-    
-    vector<vector<double>>kernel = [self generateGaussianKernel2D:radius];
-    vector<vector<rgba>>pixels = [self imageStruct:image];
-    
-    int sumRed = 0, sumGreen = 0, sumBlue = 0, sumAlpha = 0;
-    int count = 0;
-    double kernelSum2 = 0.0, weight = 0.0;
-    
-    for (long y = 0; y < height; ++y) {
-        for (long x = 0; x < width; ++x) {
-            long pixelIndex = (y * width + x) * 4;
-            sumRed = 0;
-            sumGreen = 0;
-            sumBlue = 0;
-            sumAlpha = 0;
-            count = 0;
-            
-            for (int yr = -radius; yr <= radius; ++yr) {
-                for (int xr = -radius; xr <=radius; ++xr) {
-                    long pixelX = x + xr;
-                    long pixelY = y + yr;
-                    
-                    if (pixelX >=  0 && pixelX < width && pixelY >=  0 && pixelY < height) {
-                        rgba pixel = pixels[pixelY][pixelX];
-                        weight = kernel[yr + radius][xr + radius];
-                        sumRed += roundf(pixel.r * weight);
-                        sumGreen += roundf(pixel.g * weight);
-                        sumBlue += roundf(pixel.b * weight);
-                        kernelSum2 += weight;
-                    }
-                }
-            }
-            rgba avgPixel;
-            avgPixel.r = roundf(sumRed);
-            avgPixel.g = roundf(sumGreen);
-            avgPixel.b = roundf(sumBlue);
-            
-            rawImageData[pixelIndex] = avgPixel.r;
-            rawImageData[pixelIndex +  1] = avgPixel.g;
-            rawImageData[pixelIndex +  2] = avgPixel.b;
-        }
+
+    NSInteger allPixelCount = bitmapImageRep.pixelsHigh * bitmapImageRep.pixelsWide;
+    for (NSInteger i = 0; i < allPixelCount; ++i) {
+
+        NSInteger pixelIndex = i * 4;
+        
+        rawImageData[pixelIndex] = MAXRGBA - rawImageData[pixelIndex];
+        rawImageData[pixelIndex + 1] = MAXRGBA - rawImageData[pixelIndex + 1];
+        rawImageData[pixelIndex + 2] = MAXRGBA - rawImageData[pixelIndex + 2];
     }
+
+    NSImage *negativeImage = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
+    [negativeImage addRepresentation:bitmapImageRep];
     
-    NSImage *bluredImage = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
-    [bluredImage addRepresentation:bitmapImageRep];
-    
-    return bluredImage;
+    return negativeImage;
 }
 
-- (NSImage *) gaussBlurToImageOptimized:(NSImage *)image withRadius:(int)radius {
-    NSBitmapImageRep *bitmapImageRep = [self createBitmapImageRepFromImage:image];
-    
-    const NSInteger width = bitmapImageRep.pixelsWide;
-    const NSInteger height = bitmapImageRep.pixelsHigh;
-    unsigned char *rawImageData = [bitmapImageRep bitmapData];
-    
-    vector<double>kernel = [self generateGaussianKernel1D:radius];
-    vector<vector<rgba>>pixels = [self imageStruct:image];
-    
-    int sumRed = 0, sumGreen = 0, sumBlue = 0, sumAlpha = 0;
-    int count = 0;
-    double kernelSum2 = 0.0, weight = 0.0;
-    
-    NSImage *bluredImageVertical;
-    NSBitmapImageRep *bitmapImageRepVertical;
-    unsigned char *rawImageDataVertical;
-    NSImage *bluredImage;
-    
-    for (long y = 0; y < height; y++) {
-        for (long x = 0; x < width; ++x) {
-            long pixelIndex = (y * width + x) * 4;
-            rgba pixel;
-            sumRed = 0;
-            sumGreen = 0;
-            sumBlue = 0;
-            sumAlpha = 0;
-            count = 0;
-            
-            for (int yr = -radius; yr <= radius; yr++) {
-                long pixelY = y + yr;
+-(vector<vector<rgba>>) boxBlurToImage:(vector<vector<rgba>>)imageStruct withRadius:(int)radius {
+    @autoreleasepool {
+        unsigned long height = imageStruct.size();
+        unsigned long width = imageStruct[0].size();
+        int sumRed = 0, sumGreen = 0, sumBlue = 0;
+        int count = 0;
+        
+        for (long y = 0; y < height; ++y) {
+            for (long x = 0; x < width; ++x) {
+                sumRed = 0; sumGreen = 0; sumBlue = 0; count = 0;
+                rgba pixel;
                 
-                if (pixelY >= 0 && pixelY < height) {
-                    pixel = pixels[pixelY][x];
-                    weight = kernel[yr + radius];
-                    sumRed += roundf(pixel.r * weight);
-                    sumGreen += roundf(pixel.g * weight);
-                    sumBlue += roundf(pixel.b * weight);
-                    kernelSum2 += weight;
+                for (long yr = -radius; yr <= radius; ++yr) {
+                    for (long xr = -radius; xr <=radius; ++xr) {
+                        long pixelX = x + xr;
+                        long pixelY = y + yr;
+                        
+                        if (pixelX >=  0 && pixelX < width && pixelY >=  0 && pixelY < height) {
+                            pixel = imageStruct[pixelY][pixelX];
+                            sumRed += pixel.r;
+                            sumGreen += pixel.g;
+                            sumBlue += pixel.b;
+                            count++;
+                        }
+                    }
                 }
+                imageStruct[y][x].r = (sumRed / count);
+                imageStruct[y][x].g = (sumGreen / count);
+                imageStruct[y][x].b = (sumBlue / count);
+                imageStruct[y][x].a = 255;
             }
-            
-            pixel.r = sumRed;
-            pixel.g = sumGreen;
-            pixel.b = sumBlue;
-            
-            rawImageData[pixelIndex] = pixel.r;
-            rawImageData[pixelIndex +  1] = pixel.g;
-            rawImageData[pixelIndex +  2] = pixel.b;
+        }
+        return imageStruct;
+    }
+}
+
+-(vector<vector<rgba>>) gaussBlurToImage:(vector<vector<rgba>>)imageStruct withRadius:(int)radius {
+    @autoreleasepool {
+        unsigned long height = imageStruct.size();
+        unsigned long width = imageStruct[0].size();
+        vector<vector<double>>kernel = [self generateGaussianKernel2D:radius];
+        
+        int count = 0;
+        double weight = 0., sumRed = 0., sumGreen = 0., sumBlue = 0.;
+        
+        for (long y = 0; y < height; ++y) {
+            for (long x = 0; x < width; ++x) {
+                sumRed = 0; sumGreen = 0; sumBlue = 0; count = 0;
+                rgba pixel;
+                
+                for (int yr = -radius; yr <= radius; ++yr) {
+                    for (int xr = -radius; xr <=radius; ++xr) {
+                        long pixelX = x + xr;
+                        long pixelY = y + yr;
+                        
+                        if (pixelX >=  0 && pixelX < width && pixelY >=  0 && pixelY < height) {
+                            pixel = imageStruct[pixelY][pixelX];
+                            weight = kernel[yr + radius][xr + radius];
+                            sumRed += pixel.r * weight;
+                            sumGreen += pixel.g * weight;
+                            sumBlue += pixel.b * weight;
+                        }
+                    }
+                }
+                imageStruct[y][x].r = sumRed;
+                imageStruct[y][x].g = sumGreen;
+                imageStruct[y][x].b = sumBlue;
+                imageStruct[y][x].a = 255;
+            }
+        }
+        return imageStruct;
+    }
+}
+
+- (vector<vector<rgba>>) gaussBlurToImageOptimized:(vector<vector<rgba>>)imageStruct withRadius:(int)radius {
+    @autoreleasepool {
+        unsigned long height = imageStruct.size();
+        unsigned long width = imageStruct[0].size();
+        
+        vector<double> kernel = [self generateGaussianKernel1D:radius];
+        double weight = 0., sumRed = 0., sumGreen = 0., sumBlue = 0.;
+        
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                sumRed = 0; sumBlue = 0; sumGreen = 0;
+                rgba pixel;
+                
+                for (int yr = -radius; yr <= radius; ++yr) {
+                    long pixelY = y + yr;
+                    
+                    if (pixelY >= 0 && pixelY < height) {
+                        pixel = imageStruct[pixelY][x];
+                        weight = kernel[yr + radius];
+                        sumRed += pixel.r * weight;
+                        sumGreen += pixel.g * weight;
+                        sumBlue += pixel.b * weight;
+                    }
+                }
+                imageStruct[y][x].r = sumRed;
+                imageStruct[y][x].g = sumGreen;
+                imageStruct[y][x].b = sumBlue;
+                imageStruct[y][x].a = 255;
+            }
+        }
+                
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                sumRed = 0; sumBlue = 0; sumGreen = 0;
+                rgba pixel;
+                
+                for (int xr = -radius; xr <= radius; ++xr) {
+                    long pixelX = xr + x;
+                    
+                    if (pixelX >= 0 && pixelX < width) {
+                        pixel = imageStruct[y][pixelX];
+                        weight = kernel[xr + radius];
+                        sumRed += pixel.r * weight;
+                        sumGreen += pixel.g * weight;
+                        sumBlue += pixel.b * weight;
+                    }
+                }
+                imageStruct[y][x].r = sumRed;
+                imageStruct[y][x].g = sumGreen;
+                imageStruct[y][x].b = sumBlue;
+                imageStruct[y][x].a = 255;
+            }
         }
     }
+    return imageStruct;
+}
+
+//struct {
+//    const vector<vector<rgba>> &inputImage;
+//    vector<vector<rgba>> &outputImage;
+//    const vector<double> &kernel;
+//    int startY, int endY, int radius
+//} inputData;
+
+void gaussX(const vector<vector<rgba>> &inputImage, vector<vector<rgba>> *outputImage, const vector<double> &kernel, int startY, int endY, int radius, unsigned long width) {
+
+    double weight = 0., sumRed = 0., sumGreen = 0., sumBlue = 0.;
     
-    bluredImageVertical = [[NSImage alloc] initWithSize:[bitmapImageRep size]];
-    [bluredImageVertical addRepresentation:bitmapImageRep];
-    pixels = [self imageStruct:bluredImageVertical];
-    bitmapImageRepVertical = [self createBitmapImageRepFromImage:bluredImageVertical];
-    rawImageDataVertical = [bitmapImageRepVertical bitmapData];
-    
-    for (long y = 0; y < height; ++y) {
-        for (long x = 0; x < width; ++x) {
-            long pixelIndex = (y * width + x) * 4;
-            rgba avgPixel;
+    for (int y = startY; y < endY; ++y) {
+        for (int x = 0; x < width; ++x) {
+            sumRed = 0; sumBlue = 0; sumGreen = 0;
             rgba pixel;
-            sumRed = 0;
-            sumGreen = 0;
-            sumBlue = 0;
-            sumAlpha = 0;
-            count = 0;
             
-            for (int xr = -radius; xr <= radius; xr++) {
-                long pixelX = x + xr;
+            for (int xr = -radius; xr <= radius; ++xr) {
+                long pixelX = xr + x;
                 
                 if (pixelX >= 0 && pixelX < width) {
-                    pixel = pixels[y][pixelX];
+                    pixel = inputImage[y][pixelX];
                     weight = kernel[xr + radius];
-                    sumRed += roundf(pixel.r * weight);
-                    sumGreen += roundf(pixel.g * weight);
-                    sumBlue += roundf(pixel.b * weight);
-                    kernelSum2 += weight;
+                    sumRed += pixel.r * weight;
+                    sumGreen += pixel.g * weight;
+                    sumBlue += pixel.b * weight;
                 }
             }
-            
-            avgPixel.r = sumRed;
-            avgPixel.g = sumGreen;
-            avgPixel.b = sumBlue;
-            
-            rawImageDataVertical[pixelIndex] = avgPixel.r;
-            rawImageDataVertical[pixelIndex +  1] = avgPixel.g;
-            rawImageDataVertical[pixelIndex +  2] = avgPixel.b;
+            (*outputImage)[y][x].r = sumRed;
+            (*outputImage)[y][x].g = sumGreen;
+            (*outputImage)[y][x].b = sumBlue;
+            (*outputImage)[y][x].a = 255;
         }
     }
+}
+
+- (vector<vector<rgba>>) gaussBlurToImageWThreads:(vector<vector<rgba>>)imageStruct withRadius:(int)radius withThreads:(int)threadsNo {
+    vector<thread> threadV(threadsNo);
+    vector<vector<rgba>> outputStruct(imageStruct);
+    vector<double> kernel = [self generateGaussianKernel1D:radius];
     
-    bluredImage = [[NSImage alloc] initWithSize:[bitmapImageRepVertical size]];
-    [bluredImage addRepresentation:bitmapImageRepVertical];
+    unsigned long height = imageStruct.size();
+    unsigned long width = imageStruct[0].size();
     
-    return bluredImage;
+    int stripeheight = (int)height / threadsNo;
+    for (int s = 0; s < threadsNo; ++s) {
+        int startY = s * stripeheight, endY = (s == threadsNo - 1) ? (int)height : (s + 1) * stripeheight;
+        threadV[s]= thread(gaussX, imageStruct, &outputStruct, kernel, startY, endY, radius, width);
+    }
+    for (int s = 0; s < threadsNo; ++s) {
+        threadV[s].join();
+    }
+    
+    return outputStruct;
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     @autoreleasepool {
-        NSString *filePath = @"/Users/motionvfx/Documents/smallImage.avif";
+        NSString *filePath = @"/Users/motionvfx/Documents/big.jpeg";
     
         [imageView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
         inputImage = [self loadImageFromFilePath:filePath];
@@ -548,6 +556,7 @@ bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch
         int partY = 4;
         
         NSLog(@"Pixel square sampled with next: %d %d %d %d", RGBA([self sampleSquarePixels:inputImage withSample:[self samplePixels:inputImage withPixel:genericPixel withPartX:partX withOffsetX:0 withOffsetY:0] withSecondSample:[self samplePixels:inputImage withPixel:genericPixel withPartX:partX withOffsetX:-1 withOffsetY:0] withPartY:partY]));
+        
     }
 }
 
@@ -565,9 +574,10 @@ bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch
     NSString *senderTitle = [sender title];
     NSImage *outputImage;
     
-    CFAbsoluteTime startTime = CFAbsoluteTimeGetCurrent();
     outputImage = [self renderImage:inputImage];
     
+    CFAbsoluteTime startTime = CFAbsoluteTimeGetCurrent();
+
     if ([senderTitle isEqual:@"Render image"]) {
         if (negativeSwitch == 1) {
             outputImage = [self imageToNegative:outputImage];
@@ -578,17 +588,20 @@ bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch
         }
         
         if (boxBlurSwitch == 1) {
-            outputImage = [self boxBlurToImage:outputImage withRadius:10];
+            outputImage = [self structToImage:[self boxBlurToImage:[self imageStruct:outputImage] withRadius:10] withTemplate:outputImage];
         }
         
         if (gaussBlurSwitch == 1) {
-            outputImage = [self gaussBlurToImage:outputImage withRadius:10];
+            outputImage = [self structToImage:[self gaussBlurToImage:[self imageStruct:outputImage] withRadius:10] withTemplate:outputImage];
         }
         
         if (gaussOptimizedSwitch == 1) {
-            outputImage = [self gaussBlurToImageOptimized:outputImage withRadius:10];
+            outputImage = [self structToImage:[self gaussBlurToImageOptimized:[self imageStruct:outputImage] withRadius:40] withTemplate:outputImage];
         }
         
+        if (gaussianWThreads == 1) {
+            outputImage = [self structToImage:[self gaussBlurToImageWThreads:[self imageStruct:outputImage] withRadius:40 withThreads:8] withTemplate:outputImage];
+        }
     }
     else {
         NSLog(@"invalid action");
