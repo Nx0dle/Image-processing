@@ -487,9 +487,64 @@ bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch
     return imageStruct;
 }
 
+//struct {
+//    const vector<vector<rgba>> &inputImage;
+//    vector<vector<rgba>> &outputImage;
+//    const vector<double> &kernel;
+//    int startY, int endY, int radius
+//} inputData;
+
+void gaussX(const vector<vector<rgba>> &inputImage, vector<vector<rgba>> *outputImage, const vector<double> &kernel, int startY, int endY, int radius, unsigned long width) {
+
+    double weight = 0., sumRed = 0., sumGreen = 0., sumBlue = 0.;
+    
+    for (int y = startY; y < endY; ++y) {
+        for (int x = 0; x < width; ++x) {
+            sumRed = 0; sumBlue = 0; sumGreen = 0;
+            rgba pixel;
+            
+            for (int xr = -radius; xr <= radius; ++xr) {
+                long pixelX = xr + x;
+                
+                if (pixelX >= 0 && pixelX < width) {
+                    pixel = inputImage[y][pixelX];
+                    weight = kernel[xr + radius];
+                    sumRed += pixel.r * weight;
+                    sumGreen += pixel.g * weight;
+                    sumBlue += pixel.b * weight;
+                }
+            }
+            (*outputImage)[y][x].r = sumRed;
+            (*outputImage)[y][x].g = sumGreen;
+            (*outputImage)[y][x].b = sumBlue;
+            (*outputImage)[y][x].a = 255;
+        }
+    }
+}
+
+- (vector<vector<rgba>>) gaussBlurToImageWThreads:(vector<vector<rgba>>)imageStruct withRadius:(int)radius withThreads:(int)threadsNo {
+    vector<thread> threadV(threadsNo);
+    vector<vector<rgba>> outputStruct(imageStruct);
+    vector<double> kernel = [self generateGaussianKernel1D:radius];
+    
+    unsigned long height = imageStruct.size();
+    unsigned long width = imageStruct[0].size();
+    
+    int stripeheight = (int)height / threadsNo;
+    for (int s = 0; s < threadsNo; ++s) {
+        int startY = s * stripeheight, endY = (s == threadsNo - 1) ? (int)height : (s + 1) * stripeheight;
+        threadV[s]= thread(gaussX, imageStruct, &outputStruct, kernel, startY, endY, radius, width);
+    }
+    for (int s = 0; s < threadsNo; ++s) {
+        threadV[s].join();
+    }
+    
+    return outputStruct;
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     @autoreleasepool {
-        NSString *filePath = @"/Users/motionvfx/Documents/chessboard.png";
+        NSString *filePath = @"/Users/motionvfx/Documents/big.jpeg";
     
         [imageView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
         inputImage = [self loadImageFromFilePath:filePath];
@@ -519,9 +574,10 @@ bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch
     NSString *senderTitle = [sender title];
     NSImage *outputImage;
     
-    CFAbsoluteTime startTime = CFAbsoluteTimeGetCurrent();
     outputImage = [self renderImage:inputImage];
     
+    CFAbsoluteTime startTime = CFAbsoluteTimeGetCurrent();
+
     if ([senderTitle isEqual:@"Render image"]) {
         if (negativeSwitch == 1) {
             outputImage = [self imageToNegative:outputImage];
@@ -540,7 +596,11 @@ bool grayScaleSwitch = 0, negativeSwitch = 0, boxBlurSwitch = 0, gaussBlurSwitch
         }
         
         if (gaussOptimizedSwitch == 1) {
-            outputImage = [self structToImage:[self gaussBlurToImageOptimized:[self imageStruct:outputImage] withRadius:10] withTemplate:outputImage];
+            outputImage = [self structToImage:[self gaussBlurToImageOptimized:[self imageStruct:outputImage] withRadius:40] withTemplate:outputImage];
+        }
+        
+        if (gaussianWThreads == 1) {
+            outputImage = [self structToImage:[self gaussBlurToImageWThreads:[self imageStruct:outputImage] withRadius:40 withThreads:8] withTemplate:outputImage];
         }
     }
     else {

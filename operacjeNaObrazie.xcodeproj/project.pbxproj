@@ -81,8 +81,8 @@
 			children = (
 				051479A22B7A11C3003954F1 /* operacjeNaObrazie */,
 				051479B52B7A11C5003954F1 /* operacjeNaObrazieTests */,
-				051479BF2B7A11C5003954F1 /* operacjeNaObrazieUITests */,
 				051479A12B7A11C3003954F1 /* Products */,
+				051479BF2B7A11C5003954F1 /* operacjeNaObrazieUITests */,
 			);
 			sourceTree = "<group>";
 		};
