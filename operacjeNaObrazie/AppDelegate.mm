@@ -557,6 +557,7 @@ void gaussX(const vector<vector<rgba>> &inputImage, vector<vector<rgba>> *output
         
         NSLog(@"Pixel square sampled with next: %d %d %d %d", RGBA([self sampleSquarePixels:inputImage withSample:[self samplePixels:inputImage withPixel:genericPixel withPartX:partX withOffsetX:0 withOffsetY:0] withSecondSample:[self samplePixels:inputImage withPixel:genericPixel withPartX:partX withOffsetX:-1 withOffsetY:0] withPartY:partY]));
         
+        NSLog(@"%d", thread::hardware_concurrency());
     }
 }
 
